@@ -71,7 +71,7 @@ function App() {
       <button
         onClick={async () => {
           if (window.confirm("Segur que vols esborrar TOT l'historial?")) {
-            await axios.delete("http://127.0.0.1:8000/clear");
+            await axios.delete("https://bisbat-backend.onrender.com//clear");
             fetchDocuments();
           }
         }}
