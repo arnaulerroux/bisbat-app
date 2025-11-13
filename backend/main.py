@@ -8,8 +8,9 @@ import re
 import json
 
 # CONFIGURACIÓ TESSERACT
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-os.environ["TESSDATA_PREFIX"] = r"C:\Program Files\Tesseract-OCR\tessdata"
+import os
+pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
+os.environ["TESSDATA_PREFIX"] = "/usr/share/tesseract-ocr/5/tessdata"
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
