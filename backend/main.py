@@ -4,7 +4,6 @@ import io
 from PIL import Image
 import os
 import pytesseract
-from pdf2image import convert_from_bytes
 import re
 import json
 
@@ -12,16 +11,10 @@ import json
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 os.environ["TESSDATA_PREFIX"] = r"C:\Program Files\Tesseract-OCR\tessdata"
 
-# COMPROVACIÓ IDIOMES
-if os.path.exists(os.environ["TESSDATA_PREFIX"]):
-    print("Idiomes disponibles:", os.listdir(os.environ["TESSDATA_PREFIX"]))
-else:
-    print("ERROR: Carpeta tessdata no trobada!")
-
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-# CARREGAR BASE DE DADES
+# BASE DE DADES
 def carregar_db():
     if os.path.exists("documents.json"):
         with open("documents.json", "r", encoding="utf-8") as f:
@@ -34,7 +27,7 @@ def guardar_db(db):
 
 db = carregar_db()
 
-# DETECTAR NOM BASE DEL LLIBRE
+# NOM BASE
 def obtenir_nom_base(filename):
     name = os.path.splitext(filename)[0]
     match = re.match(r"(.+)_p\d+$", name)
@@ -61,7 +54,6 @@ def classificar_text(text):
     
     return c
 
-# ENDPOINTS
 @app.get("/")
 def home():
     return {"message": "Servidor funcionant!", "ocr_ready": True}
@@ -73,25 +65,21 @@ async def ocr(file: UploadFile = File(...)):
         filename = file.filename
         nom_base = obtenir_nom_base(filename)
 
-        # BUSCAR SI JA EXISTEIX EL LLIBRE
+        # NOMÉS IMATGES (JPG, PNG, etc.) — PDF després
+        if not filename.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp', '.tiff')):
+            return {"error": "Només imatges JPG/PNG per ara. PDF després."}
+
+        image = Image.open(io.BytesIO(image_bytes))
+        text_nou = pytesseract.image_to_string(image, lang="cat+spa")
+
         llibre = next((d for d in db if d["nom_base"] == nom_base), None)
 
-        # EXTREURE TEXT
-        if filename.lower().endswith(".pdf"):
-            images = convert_from_bytes(image_bytes, poppler_path=r"C:\Program Files\poppler-25.07.0\library\bin")
-            text_nou = "\n".join([pytesseract.image_to_string(img, lang="cat+spa") for img in images])
-        else:
-            image = Image.open(io.BytesIO(image_bytes))
-            text_nou = pytesseract.image_to_string(image, lang="cat+spa")
-
         if llibre:
-            # AFEGIR PÀGINA
             llibre["text"] += "\n\n--- PÀGINA NOU ---\n\n" + text_nou
             llibre["pagines"] += 1
             llibre["fitxers"].append(filename)
             llibre["classificacio"] = classificar_text(llibre["text"])
         else:
-            # NOU LLIBRE
             c = classificar_text(text_nou)
             llibre = {
                 "nom_llibre": nom_base.replace("_", " "),
