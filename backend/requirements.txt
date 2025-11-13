@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+gunicorn
+pytesseract
+pandas
+numpy
+Pillow
+python-multipart

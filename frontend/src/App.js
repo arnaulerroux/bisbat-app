@@ -22,7 +22,7 @@ function App() {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const res = await axios.post("http://127.0.0.1:8000/ocr", formData);
+      const res = await axios.post("https://bisbat-backend.onrender.com/ocr", formData);
       setResult(res.data);
       await fetchDocuments();
     } catch (err) {
@@ -34,7 +34,7 @@ function App() {
 
   const fetchDocuments = async () => {
     try {
-      const res = await axios.get("http://127.0.0.1:8000/documents");
+      const res = await axios.get("https://bisbat-backend.onrender.com/documents");
       setDocuments(res.data.documents);
     } catch (err) {
       console.error(err);
