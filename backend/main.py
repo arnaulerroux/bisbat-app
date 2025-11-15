@@ -59,28 +59,45 @@ def home():
 @app.post("/ocr")
 async def ocr(file: UploadFile = File(...)):
     try:
-        # OCR.SPACE API
-        url = "https://api.ocr.space/parse/image"
-        files = {'file': await file.read()}
-        data = {
-            'apikey': OCR_API_KEY,
-            'language': 'spa',  # o 'cat' per català
-            'isOverlayRequired': False
-        }
-        response = requests.post(url, files=files, data=data)
-        result = response.json()
-        text_nou = result.get('ParsedResults', [{}])[0].get('ParsedText', '')
-
-        if not text_nou:
-            return {"error": "No s'ha pogut extreure text"}
-
+        # Llegeix el fitxer
+        file_bytes = await file.read()
         filename = file.filename
         nom_base = obtenir_nom_base(filename)
 
+        # OCR.SPACE API
+        url = "https://api.ocr.space/parse/image"
+        files = {'file': (filename, file_bytes)}
+        data = {
+            'apikey': OCR_API_KEY,
+            'language': 'spa',  # o 'cat' per català
+            'isOverlayRequired': False,
+            'filetype': filename.split('.')[-1].upper()
+        }
+        
+        response = requests.post(url, files=files, data=data, timeout=30)
+        result = response.json()
+
+        # DEBUG: Guarda la resposta per veure-la
+        print("OCR.Space response:", result)
+
+        # Extreu el text
+        if result.get("IsErroredOnProcessing"):
+            error_msg = result.get("ErrorMessage", ["Error desconegut"])[0]
+            return {"error": f"OCR.Space error: {error_msg}"}
+        
+        parsed_results = result.get("ParsedResults", [])
+        if not parsed_results:
+            return {"error": "No s'ha trobat text. Prova amb una imatge més clara."}
+        
+        text_nou = parsed_results[0].get("ParsedText", "").strip()
+        if not text_nou:
+            return {"error": "Text buit. Prova amb una imatge amb text clar."}
+
+        # Processa com abans
         llibre = next((d for d in db if d["nom_base"] == nom_base), None)
 
         if llibre:
-            llibre["text"] += "\n\n--- PÀGINA NOU ---\n\n" + text_nou
+            llibre["text"] += "\n\n--- PÀGINA NOVA ---\n\n" + text_nou
             llibre["pagines"] += 1
             llibre["fitxers"].append(filename)
             llibre["classificacio"] = classificar_text(llibre["text"])
@@ -105,7 +122,8 @@ async def ocr(file: UploadFile = File(...)):
             "success": True
         }
     except Exception as e:
-        return {"error": str(e)}
+        print("Error:", str(e))
+        return {"error": f"Error intern: {str(e)}"}
 
 @app.get("/documents")
 def obtenir_documents():
