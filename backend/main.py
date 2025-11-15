@@ -1,16 +1,13 @@
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+import requests
 import io
-from PIL import Image
-import os
-import pytesseract
 import re
 import json
-
-# CONFIGURACIÓ TESSERACT
 import os
-pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
-os.environ["TESSDATA_PREFIX"] = "/usr/share/tesseract-ocr/5/tessdata"
+
+# API KEY GRATUÏTA (canvia per la teva)
+OCR_API_KEY = "K89906914888957"  # <-- CANVIA AQUESTA PEL TEU
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
@@ -57,21 +54,28 @@ def classificar_text(text):
 
 @app.get("/")
 def home():
-    return {"message": "Servidor funcionant!", "ocr_ready": True}
+    return {"message": "Servidor funcionant amb OCR.Space!", "ocr_ready": True}
 
 @app.post("/ocr")
 async def ocr(file: UploadFile = File(...)):
     try:
-        image_bytes = await file.read()
+        # OCR.SPACE API
+        url = "https://api.ocr.space/parse/image"
+        files = {'file': await file.read()}
+        data = {
+            'apikey': OCR_API_KEY,
+            'language': 'spa',  # o 'cat' per català
+            'isOverlayRequired': False
+        }
+        response = requests.post(url, files=files, data=data)
+        result = response.json()
+        text_nou = result.get('ParsedResults', [{}])[0].get('ParsedText', '')
+
+        if not text_nou:
+            return {"error": "No s'ha pogut extreure text"}
+
         filename = file.filename
         nom_base = obtenir_nom_base(filename)
-
-        # NOMÉS IMATGES (JPG, PNG, etc.) — PDF després
-        if not filename.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp', '.tiff')):
-            return {"error": "Només imatges JPG/PNG per ara. PDF després."}
-
-        image = Image.open(io.BytesIO(image_bytes))
-        text_nou = pytesseract.image_to_string(image, lang="cat+spa")
 
         llibre = next((d for d in db if d["nom_base"] == nom_base), None)
 
