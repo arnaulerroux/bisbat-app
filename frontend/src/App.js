@@ -8,280 +8,139 @@ function App() {
   const [documents, setDocuments] = useState([]);
   const [search, setSearch] = useState("");
 
-  const filtered = documents.filter(d => 
-    d.nom_llibre.toLowerCase().includes(search.toLowerCase()) ||
-    d.text?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredDocuments = documents.filter((doc) => {
+    const textMatch = doc.fitxer.toLowerCase().includes(search.toLowerCase()) ||
+                     doc.text?.toLowerCase().includes(search.toLowerCase());
+    return textMatch;
+  });
 
-  const upload = async () => {
-    if (!file) return alert("Selecciona un document");
+  const handleUpload = async () => {
+    if (!file) return alert("Selecciona un fitxer!");
     setLoading(true);
-    const form = new FormData();
-    form.append("file", file);
+    const formData = new FormData();
+    formData.append("file", file);
     try {
-      const res = await axios.post("https://bisbat-backend.onrender.com/ocr", form);
+      const res = await axios.post("https://bisbat-backend.onrender.com/ocr", formData);
       setResult(res.data);
-      fetchDocs();
-    } catch (e) {
-      alert("Error: " + (e.response?.data?.error || "No s'ha pogut processar"));
+      await fetchDocuments();
+    } catch (err) {
+      alert("Error al pujar el fitxer!");
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchDocs = async () => {
+  const fetchDocuments = async () => {
     try {
       const res = await axios.get("https://bisbat-backend.onrender.com/documents");
-      setDocuments(res.data.documents || []);
-    } catch (e) { }
+      setDocuments(res.data.documents);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  useEffect(() => { fetchDocs(); }, []);
+  useEffect(() => {
+    fetchDocuments();
+  }, []);
 
   return (
-    <div style={styles.body}>
-      <header style={styles.header}>
-        <div style={styles.cross}>✝</div>
-        <h1 style={styles.title}>Arxiu Sacre</h1>
-        <div style={styles.cross}>✝</div>
-        <p style={styles.subtitle}>Classificador intel·ligent del Bisbat</p>
-      </header>
+    <div style={{ padding: "30px", fontFamily: "sans-serif", textAlign: "center" }}>
+      <h1>📄 Classificador de Documents - Bisbat</h1>
 
-      <div style={styles.card}>
-        <input type="file" onChange={e => setFile(e.target.files[0])} style={styles.input} />
-        {file && <p style={styles.fileName}>{file.name}</p>}
-        <button onClick={upload} disabled={loading} style={loading ? styles.btnDisabled : styles.btn}>
-          {loading ? "🔮 Processant amb IA..." : "⬆ Pujar i classificar"}
-        </button>
-      </div>
+      <input
+        type="file"
+        accept="image/*,application/pdf"
+        onChange={(e) => setFile(e.target.files[0])}
+      />
+      <button onClick={handleUpload} disabled={loading} style={{ marginLeft: "10px" }}>
+        {loading ? "Processant..." : "Pujar i classificar"}
+      </button>
 
-      {result && !result.error && (
-        <div style={styles.resultCard}>
-          <h2 style={styles.resultTitle}>Document classificat</h2>
-          <div style={styles.grid}>
-            <div style={styles.box}><span style={styles.label}>Llibre</span><br/>{result.llibre}</div>
-            <div style={styles.box}><span style={styles.label}>Pàgines</span><br/>{result.pagines}</div>
-            <div style={styles.box}><span style={styles.label}>Any</span><br/>{result.classificacio?.any || "?"}</div>
-            <div style={styles.box}><span style={styles.label}>Tipus</span><br/>{result.classificacio?.tipus || "?"}</div>
-            <div style={styles.box}><span style={styles.label}>Parròquia</span><br/>{result.classificacio?.parroquia || "?"}</div>
-          </div>
-          <div style={styles.textBox}>
-            <pre style={styles.pre}>{result.text}</pre>
-          </div>
+      {result && (
+        <div style={{ marginTop: "30px", textAlign: "left", maxWidth: "800px", margin: "auto" }}>
+          <h2>🧠 Resultat</h2>
+          <p><strong>Any:</strong> {result.classificacio?.any}</p>
+          <p><strong>Tipus:</strong> {result.classificacio?.tipus}</p>
+          <p><strong>Estat legal:</strong> {result.classificacio?.estat_legal}</p>
+          <p><strong>Parròquia:</strong> {result.classificacio?.parroquia}</p>
+
+          <h3>📜 Text extret:</h3>
+          <pre style={{
+            background: "#f4f4f4",
+            padding: "10px",
+            borderRadius: "5px",
+            maxHeight: "300px",
+            overflowY: "auto"
+          }}>
+            {result.text}
+          </pre>
         </div>
       )}
 
-      <button onClick={() => axios.delete("https://bisbat-backend.onrender.com/clear").then(() => {setResult(null); fetchDocs();})} 
-              style={styles.clearBtn}>🗑 Netejar historial</button>
+      <button
+        onClick={async () => {
+          if (window.confirm("Segur que vols esborrar tot l'historial?")) {
+            await axios.delete("https://bisbat-backend.onrender.com/clear");
+            fetchDocuments();
+          }
+        }}
+        style={{
+          marginTop: "20px",
+          padding: "10px 20px",
+          background: "#e74c3c",
+          color: "white",
+          border: "none",
+          borderRadius: "5px",
+          cursor: "pointer"
+        }}
+      >
+        Netejar historial
+      </button>
 
-      <div style={styles.history}>
-        <h2 style={styles.historyTitle}>Arxiu Històric</h2>
-        <input placeholder="🔍 Cerca..." value={search} onChange={e => setSearch(e.target.value)} style={styles.search} />
-        {filtered.length === 0 ? 
-          <p style={styles.empty}>Comença a pujar els teus arxius sagrats...</p> :
-          <div style={styles.gridHistory}>
-            {filtered.map((d, i) => (
-              <div key={i} style={styles.historyCard}>
-                <h3 style={styles.historyName}>{d.nom_llibre}</h3>
-                <p>📅 {d.classificacio.any}</p>
-                <p>📜 {d.classificacio.tipus}</p>
-                <p>📍 {d.classificacio.parroquia}</p>
-                <p>📄 {d.pagines} pàg.</p>
-              </div>
+      <hr style={{ margin: "40px 0" }} />
+
+      <h2>📚 Historial de documents</h2>
+      <input
+        type="text"
+        placeholder="🔍 Cerca per nom o text..."
+        onChange={(e) => setSearch(e.target.value)}
+        style={{
+          padding: "8px",
+          width: "250px",
+          borderRadius: "5px",
+          border: "1px solid #ccc",
+          marginBottom: "20px"
+        }}
+      />
+
+      {filteredDocuments.length === 0 ? (
+        <p>No hi ha documents guardats encara.</p>
+      ) : (
+        <table style={{ margin: "auto", borderCollapse: "collapse", width: "90%" }}>
+          <thead>
+            <tr style={{ background: "#ddd" }}>
+              <th>Fitxer</th>
+              <th>Any</th>
+              <th>Tipus</th>
+              <th>Estat</th>
+              <th>Parròquia</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredDocuments.map((doc, i) => (
+              <tr key={i} style={{ borderBottom: "1px solid #ccc" }}>
+                <td>{doc.fitxer}</td>
+                <td>{doc.classificacio.any}</td>
+                <td>{doc.classificacio.tipus}</td>
+                <td>{doc.classificacio.estat_legal}</td>
+                <td>{doc.classificacio.parroquia}</td>
+              </tr>
             ))}
-          </div>
-        }
-      </div>
-
-      <footer style={styles.footer}>© 2025 Arxiu Sacre del Bisbat — Arnau Lerroux</footer>
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
-
-const styles = {
-  body: { 
-    fontFamily: "'Georgia', serif", 
-    background: "linear-gradient(135deg, #1a0033, #000000)", 
-    color: "#e6d6b3", 
-    minHeight: "100vh", 
-    padding: "20px" 
-  },
-  header: { 
-    textAlign: "center", 
-    padding: "40px", 
-    background: "rgba(0,0,0,0.7)", 
-    border: "3px solid #b8860b", 
-    borderRadius: "20px", 
-    marginBottom: "30px" 
-  },
-  cross: { 
-    fontSize: "50px", 
-    color: "#b8860b", 
-    display: "inline-block", 
-    margin: "0 20px" 
-  },
-  title: { 
-    fontSize: "60px", 
-    background: "linear-gradient(to right, #b8860b, #ffd700)", 
-    WebkitBackgroundClip: "text", 
-    WebkitTextFillColor: "transparent", 
-    margin: "0" 
-  },
-  subtitle: { 
-    fontStyle: "italic", 
-    color: "#d8bfd8", 
-    fontSize: "22px" 
-  },
-  card: { 
-    background: "rgba(20,0,40,0.8)", 
-    padding: "30px", 
-    borderRadius: "20px", 
-    textAlign: "center", 
-    border: "2px solid #b8860b", 
-    maxWidth: "600px", 
-    margin: "0 auto 40px" 
-  },
-  input: { 
-    width: "100%", 
-    padding: "15px", 
-    background: "#000", 
-    border: "2px dashed #b8860b", 
-    color: "#fff", 
-    borderRadius: "10px", 
-    marginBottom: "15px" 
-  },
-  fileName: { 
-    color: "#ffd700", 
-    fontWeight: "bold", 
-    margin: "10px 0" 
-  },
-  btn: { 
-    background: "linear-gradient(#b8860b, #ffd700)", 
-    color: "#000", 
-    padding: "18px 40px", 
-    fontSize: "20px", 
-    border: "none", 
-    borderRadius: "15px", 
-    cursor: "pointer", 
-    fontWeight: "bold" 
-  },
-  btnDisabled: { 
-    background: "#555", 
-    color: "#999", 
-    padding: "18px 40px", 
-    fontSize: "20px", 
-    borderRadius: "15px", 
-    cursor: "not-allowed" 
-  },
-  resultCard: { 
-    background: "rgba(20,0,40,0.9)", 
-    padding: "30px", 
-    borderRadius: "20px", 
-    border: "2px solid #b8860b", 
-    margin: "30px auto", 
-    maxWidth: "1000px" 
-  },
-  resultTitle: { 
-    fontSize: "36px", 
-    textAlign: "center", 
-    background: "linear-gradient(#b8860b, #ffd700)", 
-    WebkitBackgroundClip: "text", 
-    WebkitTextFillColor: "transparent" 
-  },
-  grid: { 
-    display: "grid", 
-    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", 
-    gap: "20px", 
-    margin: "30px 0" 
-  },
-  box: { 
-    background: "rgba(138,43,226,0.3)", 
-    padding: "20px", 
-    borderRadius: "15px", 
-    textAlign: "center", 
-    border: "1px solid #b8860b" 
-  },
-  label: { 
-    color: "#d8bfd8", 
-    fontSize: "14px" 
-  },
-  textBox: { 
-    background: "#000", 
-    padding: "20px", 
-    borderRadius: "15px", 
-    border: "1px solid #b8860b", 
-    maxHeight: "400px", 
-    overflow: "auto" 
-  },
-  pre: { 
-    whiteSpace: "pre-wrap", 
-    margin: 0, 
-    fontSize: "16px" 
-  },
-  clearBtn: { 
-    background: "#8b0000", 
-    color: "white", 
-    padding: "15px 30px", 
-    border: "none", 
-    borderRadius: "15px", 
-    fontSize: "18px", 
-    cursor: "pointer", 
-    display: "block", 
-    margin: "30px auto" 
-  },
-  history: { 
-    marginTop: "60px" 
-  },
-  historyTitle: { 
-    fontSize: "48px", 
-    textAlign: "center", 
-    background: "linear-gradient(#b8860b, #ffd700)", 
-    WebkitBackgroundClip: "text", 
-    WebkitTextFillColor: "transparent" 
-  },
-  search: { 
-    width: "100%", 
-    maxWidth: "500px", 
-    padding: "15px", 
-    background: "#000", 
-    border: "2px solid #b8860b", 
-    color: "white", 
-    borderRadius: "15px", 
-    fontSize: "18px", 
-    display: "block", 
-    margin: "20px auto" 
-  },
-  empty: { 
-    textAlign: "center", 
-    fontSize: "24px", 
-    fontStyle: "italic", 
-    color: "#d8bfd8" 
-  },
-  gridHistory: { 
-    display: "grid", 
-    gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", 
-    gap: "20px", 
-    marginTop: "30px" 
-  },
-  historyCard: { 
-    background: "rgba(138,43,226,0.2)", 
-    padding: "25px", 
-    borderRadius: "15px", 
-    border: "2px solid #b8860b", 
-    textAlign: "center" 
-  },
-  historyName: { 
-    fontSize: "24px", 
-    color: "#ffd700", 
-    marginBottom: "15px" 
-  },
-  footer: { 
-    textAlign: "center", 
-    marginTop: "80px", 
-    padding: "30px", 
-    color: "#d8bfd8", 
-    fontSize: "16px" 
-  }
-};
 
 export default App;
