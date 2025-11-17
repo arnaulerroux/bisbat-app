@@ -7,24 +7,35 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [documents, setDocuments] = useState([]);
   const [search, setSearch] = useState("");
+  const [filterType, setFilterType] = useState("");
 
   const filteredDocuments = documents.filter((doc) => {
-    const textMatch = doc.fitxer.toLowerCase().includes(search.toLowerCase()) ||
-                     doc.text?.toLowerCase().includes(search.toLowerCase());
-    return textMatch;
+    const textMatch =
+      doc.fitxer.toLowerCase().includes(search) ||
+      doc.text?.toLowerCase().includes(search);
+    const typeMatch = filterType ? doc.classificacio.tipus === filterType : true;
+    return textMatch && typeMatch;
   });
 
   const handleUpload = async () => {
-    if (!file) return alert("Selecciona un fitxer!");
+    if (!file) {
+      alert("Selecciona un fitxer primer!");
+      return;
+    }
+
     setLoading(true);
     const formData = new FormData();
     formData.append("file", file);
+
     try {
-      const res = await axios.post("https://bisbat-backend.onrender.com/ocr", formData);
+      const res = await axios.post("https://bisbat-backend.onrender.com/ocr", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       setResult(res.data);
-      await fetchDocuments();
+      await fetchDocuments(); // Actualitza historial després de pujar
     } catch (err) {
       alert("Error al pujar el fitxer!");
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -35,7 +46,7 @@ function App() {
       const res = await axios.get("https://bisbat-backend.onrender.com/documents");
       setDocuments(res.data.documents);
     } catch (err) {
-      console.error(err);
+      console.error("Error obtenint documents:", err);
     }
   };
 
@@ -76,7 +87,6 @@ function App() {
           </pre>
         </div>
       )}
-
       <button
         onClick={async () => {
           if (window.confirm("Segur que vols esborrar tot l'historial?")) {
@@ -96,25 +106,38 @@ function App() {
       >
         Netejar historial
       </button>
-
       <hr style={{ margin: "40px 0" }} />
 
       <h2>📚 Historial de documents</h2>
-      <input
-        type="text"
-        placeholder="🔍 Cerca per nom o text..."
-        onChange={(e) => setSearch(e.target.value)}
-        style={{
-          padding: "8px",
-          width: "250px",
-          borderRadius: "5px",
-          border: "1px solid #ccc",
-          marginBottom: "20px"
-        }}
-      />
+      <div style={{ marginBottom: "20px" }}>
+        <input
+          type="text"
+          placeholder="🔍 Cerca per nom o text..."
+          onChange={(e) => setSearch(e.target.value.toLowerCase())}
+          style={{
+            padding: "8px",
+            width: "250px",
+            borderRadius: "5px",
+            border: "1px solid #ccc",
+            marginRight: "10px",
+          }}
+        />
+        <select
+          onChange={(e) => setFilterType(e.target.value)}
+          style={{ padding: "8px", borderRadius: "5px", border: "1px solid #ccc" }}
+        >
+          <option value="">Tots els tipus</option>
+          <option value="Factura">Factura</option>
+          <option value="Carta">Carta</option>
+          <option value="Matrimoni">Matrimoni</option>
+          <option value="Defunció">Defunció</option>
+          <option value="Partida de baptisme">Baptisme</option>
+          <option value="Altres">Altres</option>
+        </select>
+      </div>
 
       {filteredDocuments.length === 0 ? (
-        <p>No hi ha documents guardats encara.</p>
+        <p>No hi ha documents que coincideixin amb la cerca.</p>
       ) : (
         <table style={{ margin: "auto", borderCollapse: "collapse", width: "90%" }}>
           <thead>
