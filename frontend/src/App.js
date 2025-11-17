@@ -40,7 +40,6 @@ function App() {
 
   return (
     <div style={styles.body}>
-      {/* HEADER GÒTIC */}
       <header style={styles.header}>
         <div style={styles.cross}>✝</div>
         <h1 style={styles.title}>Arxiu Sacre</h1>
@@ -48,7 +47,6 @@ function App() {
         <p style={styles.subtitle}>Classificador intel·ligent del Bisbat</p>
       </header>
 
-      {/* UPLOAD */}
       <div style={styles.card}>
         <input type="file" onChange={e => setFile(e.target.files[0])} style={styles.input} />
         {file && <p style={styles.fileName}>{file.name}</p>}
@@ -57,7 +55,6 @@ function App() {
         </button>
       </div>
 
-      {/* RESULTAT */}
       {result && !result.error && (
         <div style={styles.resultCard}>
           <h2 style={styles.resultTitle}>Document classificat</h2>
@@ -74,11 +71,9 @@ function App() {
         </div>
       )}
 
-      {/* NETEJAR */}
       <button onClick={() => axios.delete("https://bisbat-backend.onrender.com/clear").then(() => {setResult(null); fetchDocs();})} 
               style={styles.clearBtn}>🗑 Netejar historial</button>
 
-      {/* HISTORIAL */}
       <div style={styles.history}>
         <h2 style={styles.historyTitle}>Arxiu Històric</h2>
         <input placeholder="🔍 Cerca..." value={search} onChange={e => setSearch(e.target.value)} style={styles.search} />
