@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Upload, FileText, X, Loader2, Church, Scroll, Calendar, Tag, MapPin, Search, Filter } from "lucide-react";
 
 function App() {
   const [file, setFile] = useState(null);
@@ -8,220 +7,286 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [documents, setDocuments] = useState([]);
   const [search, setSearch] = useState("");
-  const [filterType, setFilterType] = useState("");
 
-  const filteredDocuments = documents.filter((doc) => {
-    const matchesSearch = doc.nom_llibre.toLowerCase().includes(search.toLowerCase()) ||
-                         doc.text?.toLowerCase().includes(search.toLowerCase());
-    const matchesType = filterType ? doc.classificacio.tipus === filterType : true;
-    return matchesSearch && matchesType;
-  });
+  const filtered = documents.filter(d => 
+    d.nom_llibre.toLowerCase().includes(search.toLowerCase()) ||
+    d.text?.toLowerCase().includes(search.toLowerCase())
+  );
 
-  const handleUpload = async () => {
+  const upload = async () => {
     if (!file) return alert("Selecciona un document");
     setLoading(true);
-    const formData = new FormData();
-    formData.append("file", file);
+    const form = new FormData();
+    form.append("file", file);
     try {
-      const res = await axios.post("https://bisbat-backend.onrender.com/ocr", formData);
+      const res = await axios.post("https://bisbat-backend.onrender.com/ocr", form);
       setResult(res.data);
-      await fetchDocuments();
-    } catch (err) {
-      alert("Error: " + (err.response?.data?.error || "No s'ha pogut processar"));
+      fetchDocs();
+    } catch (e) {
+      alert("Error: " + (e.response?.data?.error || "No s'ha pogut processar"));
     } finally {
-      setLoading(false  );
+      setLoading(false);
     }
   };
 
-  const fetchDocuments = async () => {
+  const fetchDocs = async () => {
     try {
       const res = await axios.get("https://bisbat-backend.onrender.com/documents");
       setDocuments(res.data.documents || []);
-    } catch (err) { console.error(err); }
+    } catch (e) { }
   };
 
-  useEffect(() => { fetchDocuments(); }, []);
+  useEffect(() => { fetchDocs(); }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-gray-100">
-      {/* Header gótic modern */}
-      <header className="relative overflow-hidden border-b border-yellow-600/30 bg-black/40 backdrop-blur-xl">
-        <div className="absolute inset-0 bg-gradient-to-r from-yellow-600/10 via-transparent to-purple-600/10"></div>
-        <div className="relative container mx-auto px-6 py-8 text-center">
-          <div className="flex items-center justify-center gap-4 mb-4">
-            <Church className="w-12 h-12 text-yellow-500" />
-            <h1 className="text-4xl md:text-6xl font-bold tracking-wider">
-              <span className="bg-gradient-to-r from-yellow-500 to-amber-600 bg-clip-text text-transparent">
-                Arxiu Sacre
-              </span>
-            </h1>
-            <Church className="w-12 h-12 text-yellow-500 scale-x-[-1]" />
-          </div>
-          <p className="text-purple-300 text-lg italic">Classificador intel·ligent de documents històrics del Bisbat</p>
-        </div>
+    <div style={styles.body}>
+      {/* HEADER GÒTIC */}
+      <header style={styles.header}>
+        <div style={styles.cross}>✝</div>
+        <h1 style={styles.title}>Arxiu Sacre</h1>
+        <div style={styles.cross}>✝</div>
+        <p style={styles.subtitle}>Classificador intel·ligent del Bisbat</p>
       </header>
 
-      <main className="container mx-auto px-6 py-12 max-w-7xl">
-        {/* Upload card */}
-        <div className="mb-12">
-          <div className="bg-gradient-to-br from-purple-900/50 to-black/50 backdrop-blur-lg border border-yellow-600/30 rounded-2xl p-8 shadow-2xl">
-            <div className="flex flex-col md:flex-row items-center justify-center gap-6">
-              <label className="cursor-pointer group">
-                <input type="file" accept="image/*,application/pdf" onChange={(e) => setFile(e.target.files[0])} className="hidden" />
-                <div className="bg-black/60 border-2 border-dashed border-yellow-600/50 rounded-xl p-12 hover:border-yellow-500 transition-all group-hover:scale-105">
-                  {file ? (
-                    <div className="text-center">
-                      <FileText className="w-16 h-16 mx-auto mb-4 text-yellow-500" />
-                      <p className="text-lg font-medium">{file.name}</p>
-                    </div>
-                  ) : (
-                    <div className="text-center">
-                      <Upload className="w-16 h-16 mx-auto mb-4 text-purple-400" />
-                      <p className="text-xl">Arrossega o selecciona un document</p>
-                    </div>
-                  )}
-                </div>
-              </label>
+      {/* UPLOAD */}
+      <div style={styles.card}>
+        <input type="file" onChange={e => setFile(e.target.files[0])} style={styles.input} />
+        {file && <p style={styles.fileName}>{file.name}</p>}
+        <button onClick={upload} disabled={loading} style={loading ? styles.btnDisabled : styles.btn}>
+          {loading ? "🔮 Processant amb IA..." : "⬆ Pujar i classificar"}
+        </button>
+      </div>
 
-              <button
-                onClick={handleUpload}
-                disabled={loading || !file}
-                className="px-10 py-5 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 disabled:from-gray-700 disabled:to-gray-600 text-black font-bold text-lg rounded-xl shadow-xl flex items-center gap-3 transition-all hover:scale-105 disabled:scale-100"
-              >
-                {loading ? (
-                  <> <Loader2 className="animate-spin" /> Processant amb IA...</>
-                ) : (
-                  <> <Scroll className="w-6 h-6" /> Pujar i classificar</>
-                )}
-              </button>
-            </div>
+      {/* RESULTAT */}
+      {result && !result.error && (
+        <div style={styles.resultCard}>
+          <h2 style={styles.resultTitle}>Document classificat</h2>
+          <div style={styles.grid}>
+            <div style={styles.box}><span style={styles.label}>Llibre</span><br/>{result.llibre}</div>
+            <div style={styles.box}><span style={styles.label}>Pàgines</span><br/>{result.pagines}</div>
+            <div style={styles.box}><span style={styles.label}>Any</span><br/>{result.classificacio?.any || "?"}</div>
+            <div style={styles.box}><span style={styles.label}>Tipus</span><br/>{result.classificacio?.tipus || "?"}</div>
+            <div style={styles.box}><span style={styles.label}>Parròquia</span><br/>{result.classificacio?.parroquia || "?"}</div>
+          </div>
+          <div style={styles.textBox}>
+            <pre style={styles.pre}>{result.text}</pre>
           </div>
         </div>
+      )}
 
-        {/* Resultat */}
-        {result && !result.error && (
-          <div className="mb-12 animate-fadeIn">
-            <div className="bg-black/60 backdrop-blur-lg border border-yellow-600/40 rounded-2xl p-8 shadow-2xl">
-              <h2 className="text-3xl font-bold mb-8 text-center bg-gradient-to-r from-yellow-500 to-amber-600 bg-clip-text text-transparent">
-                Document classificat
-              </h2>
-              <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6 text-center">
-                <div className="bg-purple-900/50 rounded-xl p-6 border border-purple-600/50">
-                  <Scroll className="w-10 h-10 mx-auto mb-3 text-yellow-500" />
-                  <p className="text-sm text-purple-300">Llibre</p>
-                  <p className="text-xl font-bold">{result.llibre}</p>
-                </div>
-                <div className="bg-purple-900/50 rounded-xl p-6 border border-purple-600/50">
-                  <FileText className="w-10 h-10 mx-auto mb-3 text-yellow-500" />
-                  <p className="text-sm text-purple-300">Pàgines</p>
-                  <p className="text-xl font-bold">{result.pagines}</p>
-                </div>
-                <div className="bg-purple-900/50 rounded-xl p-6 border border-purple-600/50">
-                  <Calendar className="w-10 h-10 mx-auto mb-3 text-yellow-500" />
-                  <p className="text-sm text-purple-300">Any</p>
-                  <p className="text-xl font-bold">{result.classificacio?.any || "Desconegut"}</p>
-                </div>
-                <div className="bg-purple-900/50 rounded-xl p-6 border border-purple-600/50">
-                  <Tag className="w-10 h-10 mx-auto mb-3 text-yellow-500" />
-                  <p className="text-sm text-purple-300">Tipus</p>
-                  <p className="text-xl font-bold">{result.classificacio?.tipus || "Altres"}</p>
-                </div>
-                <div className="bg-purple-900/50 rounded-xl p-6 border border-purple-600/50">
-                  <MapPin className="w-10 h-10 mx-auto mb-3 text-yellow-500" />
-                  <p className="text-sm text-purple-300">Parròquia</p>
-                  <p className="text-xl font-bold">{result.classificacio?.parroquia || "No especificada"}</p>
-                </div>
-              </div>
+      {/* NETEJAR */}
+      <button onClick={() => axios.delete("https://bisbat-backend.onrender.com/clear").then(() => {setResult(null); fetchDocs();})} 
+              style={styles.clearBtn}>🗑 Netejar historial</button>
 
-              <div className="mt-8">
-                <h3 className="text-xl font-bold mb-4 flex items-center gap-3">
-                  <FileText className="text-yellow-500" /> Text extret
-                </h3>
-                <div className="bg-black/60 rounded-xl p-6 border border-purple-600/30 max-h-96 overflow-y-auto font-serif text-gray-300 leading-relaxed">
-                  <pre className="whitespace-pre-wrap">{result.text}</pre>
-                </div>
+      {/* HISTORIAL */}
+      <div style={styles.history}>
+        <h2 style={styles.historyTitle}>Arxiu Històric</h2>
+        <input placeholder="🔍 Cerca..." value={search} onChange={e => setSearch(e.target.value)} style={styles.search} />
+        {filtered.length === 0 ? 
+          <p style={styles.empty}>Comença a pujar els teus arxius sagrats...</p> :
+          <div style={styles.gridHistory}>
+            {filtered.map((d, i) => (
+              <div key={i} style={styles.historyCard}>
+                <h3 style={styles.historyName}>{d.nom_llibre}</h3>
+                <p>📅 {d.classificacio.any}</p>
+                <p>📜 {d.classificacio.tipus}</p>
+                <p>📍 {d.classificacio.parroquia}</p>
+                <p>📄 {d.pagines} pàg.</p>
               </div>
-            </div>
+            ))}
           </div>
-        )}
+        }
+      </div>
 
-        {/* Netejar historial */}
-        <div className="text-center mb-12">
-          <button
-            onClick={async () => {
-              if (window.confirm("Segur que vols esborrar TOT l'historial?")) {
-                await axios.delete("https://bisbat-backend.onrender.com/clear");
-                setResult(null);
-                fetchDocuments();
-              }
-            }}
-            className="px-8 py-4 bg-red-900/80 hover:bg-red-800 text-white font-bold rounded-xl border border-red-600/50 shadow-xl transition-all hover:scale-105"
-          >
-            <X className="inline w-5 h-5 mr-2" /> Netejar historial complet
-          </button>
-        </div>
-
-        {/* Historial */}
-        <div>
-          <h2 className="text-4xl font-bold text-center mb-10 bg-gradient-to-r from-yellow-500 to-amber-600 bg-clip-text text-transparent">
-            Arxiu Històric
-          </h2>
-
-          <div className="bg-black/50 backdrop-blur-lg rounded-2xl p-6 border border-yellow-600/30 mb-8">
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-center">
-              <div className="relative">
-                <Search className="absolute left-4 top-4 w-5 h-5 text-purple-400" />
-                <input
-                  type="text"
-                  placeholder="Cerca per nom o contingut..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-12 pr-6 py-4 bg-black/60 border border-purple-600/50 rounded-xl text-lg w-full md:w-96 focus:outline-none focus:border-yellow-500 transition"
-                />
-              </div>
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="px-6 py-4 bg-black/60 border border-purple-600/50 rounded-xl text-lg focus:outline-none focus:border-yellow-500"
-              >
-                <option value="">Tots els tipus</option>
-                <option value="Partida de baptisme">Baptisme</option>
-                <option value="Matrimoni">Matrimoni</option>
-                <option value="Defunció">Defunció</option>
-                <option value="Factura">Factura</option>
-                <option value="Carta">Carta</option>
-                <option value="Altres">Altres</option>
-              </select>
-            </div>
-          </div>
-
-          {filteredDocuments.length === 0 ? (
-            <div className="text-center py-20 text-purple-400 text-xl italic">
-              No s'ha trobat cap document. Comença a pujar els teus arxius sagrats.
-            </div>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {filteredDocuments.map((doc, i) => (
-                <div key={i} className="bg-gradient-to-br from-purple-900/50 to-black/60 backdrop-blur-lg rounded-xl border border-yellow-600/30 p-6 hover:border-yellow-500 transition-all hover:scale-105 shadow-xl">
-                  <h3 className="text-2xl font-bold mb-3 text-yellow-500">{doc.nom_llibre}</h3>
-                  <div className="space-y-3 text-purple-200">
-                    <p><Calendar className="inline w-5 h-5 mr-2" />{doc.classificacio.any}</p>
-                    <p><Tag className="inline w-5 h-5 mr-2" />{doc.classificacio.tipus}</p>
-                    <p><FileText className="inline w-5 h-5 mr-2" />{doc.pagines} pàgina{doc.pagines !== 1 ? 's' : ''}</p>
-                    <p><MapPin className="inline w-5 h-5 mr-2" />{doc.classificacio.parroquia}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </main>
-
-      <footer className="mt-20 py-8 text-center text-purple-400 text-sm border-t border-yellow-600/20">
-        © 2025 Arxiu Sacre del Bisbat — Desenvolupat per Arnau Lerroux
-      </footer>
+      <footer style={styles.footer}>© 2025 Arxiu Sacre del Bisbat — Arnau Lerroux</footer>
     </div>
   );
 }
+
+const styles = {
+  body: { 
+    fontFamily: "'Georgia', serif", 
+    background: "linear-gradient(135deg, #1a0033, #000000)", 
+    color: "#e6d6b3", 
+    minHeight: "100vh", 
+    padding: "20px" 
+  },
+  header: { 
+    textAlign: "center", 
+    padding: "40px", 
+    background: "rgba(0,0,0,0.7)", 
+    border: "3px solid #b8860b", 
+    borderRadius: "20px", 
+    marginBottom: "30px" 
+  },
+  cross: { 
+    fontSize: "50px", 
+    color: "#b8860b", 
+    display: "inline-block", 
+    margin: "0 20px" 
+  },
+  title: { 
+    fontSize: "60px", 
+    background: "linear-gradient(to right, #b8860b, #ffd700)", 
+    WebkitBackgroundClip: "text", 
+    WebkitTextFillColor: "transparent", 
+    margin: "0" 
+  },
+  subtitle: { 
+    fontStyle: "italic", 
+    color: "#d8bfd8", 
+    fontSize: "22px" 
+  },
+  card: { 
+    background: "rgba(20,0,40,0.8)", 
+    padding: "30px", 
+    borderRadius: "20px", 
+    textAlign: "center", 
+    border: "2px solid #b8860b", 
+    maxWidth: "600px", 
+    margin: "0 auto 40px" 
+  },
+  input: { 
+    width: "100%", 
+    padding: "15px", 
+    background: "#000", 
+    border: "2px dashed #b8860b", 
+    color: "#fff", 
+    borderRadius: "10px", 
+    marginBottom: "15px" 
+  },
+  fileName: { 
+    color: "#ffd700", 
+    fontWeight: "bold", 
+    margin: "10px 0" 
+  },
+  btn: { 
+    background: "linear-gradient(#b8860b, #ffd700)", 
+    color: "#000", 
+    padding: "18px 40px", 
+    fontSize: "20px", 
+    border: "none", 
+    borderRadius: "15px", 
+    cursor: "pointer", 
+    fontWeight: "bold" 
+  },
+  btnDisabled: { 
+    background: "#555", 
+    color: "#999", 
+    padding: "18px 40px", 
+    fontSize: "20px", 
+    borderRadius: "15px", 
+    cursor: "not-allowed" 
+  },
+  resultCard: { 
+    background: "rgba(20,0,40,0.9)", 
+    padding: "30px", 
+    borderRadius: "20px", 
+    border: "2px solid #b8860b", 
+    margin: "30px auto", 
+    maxWidth: "1000px" 
+  },
+  resultTitle: { 
+    fontSize: "36px", 
+    textAlign: "center", 
+    background: "linear-gradient(#b8860b, #ffd700)", 
+    WebkitBackgroundClip: "text", 
+    WebkitTextFillColor: "transparent" 
+  },
+  grid: { 
+    display: "grid", 
+    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", 
+    gap: "20px", 
+    margin: "30px 0" 
+  },
+  box: { 
+    background: "rgba(138,43,226,0.3)", 
+    padding: "20px", 
+    borderRadius: "15px", 
+    textAlign: "center", 
+    border: "1px solid #b8860b" 
+  },
+  label: { 
+    color: "#d8bfd8", 
+    fontSize: "14px" 
+  },
+  textBox: { 
+    background: "#000", 
+    padding: "20px", 
+    borderRadius: "15px", 
+    border: "1px solid #b8860b", 
+    maxHeight: "400px", 
+    overflow: "auto" 
+  },
+  pre: { 
+    whiteSpace: "pre-wrap", 
+    margin: 0, 
+    fontSize: "16px" 
+  },
+  clearBtn: { 
+    background: "#8b0000", 
+    color: "white", 
+    padding: "15px 30px", 
+    border: "none", 
+    borderRadius: "15px", 
+    fontSize: "18px", 
+    cursor: "pointer", 
+    display: "block", 
+    margin: "30px auto" 
+  },
+  history: { 
+    marginTop: "60px" 
+  },
+  historyTitle: { 
+    fontSize: "48px", 
+    textAlign: "center", 
+    background: "linear-gradient(#b8860b, #ffd700)", 
+    WebkitBackgroundClip: "text", 
+    WebkitTextFillColor: "transparent" 
+  },
+  search: { 
+    width: "100%", 
+    maxWidth: "500px", 
+    padding: "15px", 
+    background: "#000", 
+    border: "2px solid #b8860b", 
+    color: "white", 
+    borderRadius: "15px", 
+    fontSize: "18px", 
+    display: "block", 
+    margin: "20px auto" 
+  },
+  empty: { 
+    textAlign: "center", 
+    fontSize: "24px", 
+    fontStyle: "italic", 
+    color: "#d8bfd8" 
+  },
+  gridHistory: { 
+    display: "grid", 
+    gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", 
+    gap: "20px", 
+    marginTop: "30px" 
+  },
+  historyCard: { 
+    background: "rgba(138,43,226,0.2)", 
+    padding: "25px", 
+    borderRadius: "15px", 
+    border: "2px solid #b8860b", 
+    textAlign: "center" 
+  },
+  historyName: { 
+    fontSize: "24px", 
+    color: "#ffd700", 
+    marginBottom: "15px" 
+  },
+  footer: { 
+    textAlign: "center", 
+    marginTop: "80px", 
+    padding: "30px", 
+    color: "#d8bfd8", 
+    fontSize: "16px" 
+  }
+};
 
 export default App;
