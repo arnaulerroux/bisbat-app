@@ -10,32 +10,23 @@ function App() {
   const [filterType, setFilterType] = useState("");
 
   const filteredDocuments = documents.filter((doc) => {
-    const textMatch =
-      doc.fitxer.toLowerCase().includes(search) ||
-      doc.text?.toLowerCase().includes(search);
+    const textMatch = doc.nom_llibre.toLowerCase().includes(search) ||
+                     doc.text?.toLowerCase().includes(search);
     const typeMatch = filterType ? doc.classificacio.tipus === filterType : true;
     return textMatch && typeMatch;
   });
 
   const handleUpload = async () => {
-    if (!file) {
-      alert("Selecciona un fitxer primer!");
-      return;
-    }
-
+    if (!file) return alert("Selecciona un fitxer!");
     setLoading(true);
     const formData = new FormData();
     formData.append("file", file);
-
     try {
-      const res = await axios.post("https://bisbat-backend.onrender.com/ocr", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const res = await axios.post("https://bisbat-backend.onrender.com/ocr", formData);
       setResult(res.data);
-      await fetchDocuments(); // Actualitza historial després de pujar
+      await fetchDocuments();
     } catch (err) {
-      alert("Error al pujar el fitxer!");
-      console.error(err);
+      alert("Error al pujar!");
     } finally {
       setLoading(false);
     }
@@ -46,117 +37,91 @@ function App() {
       const res = await axios.get("https://bisbat-backend.onrender.com/documents");
       setDocuments(res.data.documents);
     } catch (err) {
-      console.error("Error obtenint documents:", err);
+      console.error(err);
     }
   };
 
-  useEffect(() => {
-    fetchDocuments();
-  }, []);
+  useEffect(() => { fetchDocuments(); }, []);
 
   return (
     <div style={{ padding: "30px", fontFamily: "sans-serif", textAlign: "center" }}>
-      <h1>📄 Classificador de Documents - Bisbat</h1>
+      <h1>Classificador de Documents - Bisbat</h1>
 
-      <input
-        type="file"
-        accept="image/*,application/pdf"
-        onChange={(e) => setFile(e.target.files[0])}
-      />
-      <button onClick={handleUpload} disabled={loading} style={{ marginLeft: "10px" }}>
+      <input type="file" accept="image/*,application/pdf" onChange={(e) => setFile(e.target.files[0])} />
+      <button onClick={handleUpload} disabled={loading} style={{ marginLeft: "10px", padding: "10px 20px" }}>
         {loading ? "Processant..." : "Pujar i classificar"}
       </button>
 
       {result && (
         <div style={{ marginTop: "30px", textAlign: "left", maxWidth: "800px", margin: "auto" }}>
-          <h2>🧠 Resultat</h2>
+          <h2>Resultat</h2>
+          <p><strong>Llibre:</strong> {result.llibre}</p>
+          <p><strong>Pàgines:</strong> {result.pagines}</p>
           <p><strong>Any:</strong> {result.classificacio?.any}</p>
           <p><strong>Tipus:</strong> {result.classificacio?.tipus}</p>
-          <p><strong>Estat legal:</strong> {result.classificacio?.estat_legal}</p>
           <p><strong>Parròquia:</strong> {result.classificacio?.parroquia}</p>
 
-          <h3>📜 Text extret:</h3>
-          <pre style={{
-            background: "#f4f4f4",
-            padding: "10px",
-            borderRadius: "5px",
-            maxHeight: "300px",
-            overflowY: "auto"
-          }}>
+          <h3>Text extret (primers 2000 caràcters):</h3>
+          <pre style={{ background: "#f4f4f4", padding: "10px", borderRadius: "5px", maxHeight: "300px", overflowY: "auto" }}>
             {result.text}
           </pre>
         </div>
       )}
+
       <button
         onClick={async () => {
-          if (window.confirm("Segur que vols esborrar tot l'historial?")) {
-            await axios.delete("https://bisbat-backend.onrender.com/clear");
+          if (window.confirm("Segur que vols esborrar TOT l'historial?")) {
+            await axios.delete("https://bisbat-backend.onrender.com//clear");
             fetchDocuments();
           }
         }}
-        style={{
-          marginTop: "20px",
-          padding: "10px 20px",
-          background: "#e74c3c",
-          color: "white",
-          border: "none",
-          borderRadius: "5px",
-          cursor: "pointer"
-        }}
+        style={{ marginTop: "20px", padding: "12px 24px", background: "#e74c3c", color: "white", border: "none", borderRadius: "8px", cursor: "pointer" }}
       >
         Netejar historial
       </button>
+
       <hr style={{ margin: "40px 0" }} />
 
-      <h2>📚 Historial de documents</h2>
+      <h2>Historial de llibres</h2>
       <div style={{ marginBottom: "20px" }}>
         <input
           type="text"
-          placeholder="🔍 Cerca per nom o text..."
+          placeholder="Cerca per nom o text..."
           onChange={(e) => setSearch(e.target.value.toLowerCase())}
-          style={{
-            padding: "8px",
-            width: "250px",
-            borderRadius: "5px",
-            border: "1px solid #ccc",
-            marginRight: "10px",
-          }}
+          style={{ padding: "8px", width: "250px", borderRadius: "5px", border: "1px solid #ccc", marginRight: "10px" }}
         />
-        <select
-          onChange={(e) => setFilterType(e.target.value)}
-          style={{ padding: "8px", borderRadius: "5px", border: "1px solid #ccc" }}
-        >
+        <select onChange={(e) => setFilterType(e.target.value)} style={{ padding: "8px", borderRadius: "5px", border: "1px solid #ccc" }}>
           <option value="">Tots els tipus</option>
-          <option value="Factura">Factura</option>
-          <option value="Carta">Carta</option>
+          <option value="Partida de baptisme">Baptisme</option>
           <option value="Matrimoni">Matrimoni</option>
           <option value="Defunció">Defunció</option>
-          <option value="Partida de baptisme">Baptisme</option>
+          <option value="Factura">Factura</option>
+          <option value="Carta">Carta</option>
           <option value="Altres">Altres</option>
         </select>
       </div>
 
       {filteredDocuments.length === 0 ? (
-        <p>No hi ha documents que coincideixin amb la cerca.</p>
+        <p>No hi ha llibres que coincideixin.</p>
       ) : (
-        <table style={{ margin: "auto", borderCollapse: "collapse", width: "90%" }}>
+        <table style={{ margin: "auto", borderCollapse: "collapse", width: "95%" }}>
           <thead>
-            <tr style={{ background: "#ddd" }}>
-              <th>Fitxer</th>
-              <th>Any</th>
-              <th>Tipus</th>
-              <th>Estat</th>
-              <th>Parròquia</th>
+            <tr style={{ background: "#2c3e50", color: "white" }}>
+              <th style={{ padding: "12px" }}>Llibre</th>
+              <th style={{ padding: "12px" }}>Any</th>
+              <th style={{ padding: "12px" }}>Tipus</th>
+              <th style={{ padding: "12px" }}>Pàgines</th>
+              <th style={{ padding: "12px" }}>Parròquia</th>
             </tr>
           </thead>
           <tbody>
             {filteredDocuments.map((doc, i) => (
-              <tr key={i} style={{ borderBottom: "1px solid #ccc" }}>
-                <td>{doc.fitxer}</td>
-                <td>{doc.classificacio.any}</td>
-                <td>{doc.classificacio.tipus}</td>
-                <td>{doc.classificacio.estat_legal}</td>
-                <td>{doc.classificacio.parroquia}</td>
+              <tr key={i} style={{ background: i % 2 === 0 ? "#f8f9fa" : "white" }}>
+                <td style={{ padding: "10px" }}>{doc.nom_llibre}</td>
+                <td style={{ padding: "10px" }}>{doc.classificacio.any}</td>
+                <td style={{ padding: "10px" }}>{doc.classificacio.tipus}</td>
+                <td style={{ padding: "10px", textAlign: "center" }}>{doc.pagines}</td>
+                <td style={{ padding: "10px" }}>{doc.classificacio.parroquia}</td>
               </tr>
             ))}
           </tbody>
