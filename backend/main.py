@@ -129,6 +129,13 @@ async def ocr(file: UploadFile = File(...)):
 def obtenir_documents():
     return {"documents": db}
 
+@app.delete("/delete/{nom_base}")
+def delete_document(nom_base: str):
+    global db
+    db = [d for d in db if d["nom_base"] != nom_base]
+    guardar_db(db)
+    return {"message": f"Document {nom_base} eliminat"}
+
 @app.delete("/clear")
 def clear_history():
     global db
