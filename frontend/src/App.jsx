@@ -1,134 +1,42 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React from "react";
 
-function App() {
-  const [file, setFile] = useState(null);
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [documents, setDocuments] = useState([]);
-  const [search, setSearch] = useState("");
-  const [filterType, setFilterType] = useState("");
-
-  const filteredDocuments = documents.filter((doc) => {
-    const textMatch = doc.nom_llibre.toLowerCase().includes(search) ||
-                     doc.text?.toLowerCase().includes(search);
-    const typeMatch = filterType ? doc.classificacio.tipus === filterType : true;
-    return textMatch && typeMatch;
-  });
-
-  const handleUpload = async () => {
-    if (!file) return alert("Selecciona un fitxer!");
-    setLoading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const res = await axios.post("https://bisbat-backend.onrender.com/ocr", formData);
-      setResult(res.data);
-      await fetchDocuments();
-    } catch (err) {
-      alert("Error al pujar!");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchDocuments = async () => {
-    try {
-      const res = await axios.get("https://bisbat-backend.onrender.com/documents");
-      setDocuments(res.data.documents);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  useEffect(() => { fetchDocuments(); }, []);
-
+export default function App() {
   return (
-    <div style={{ padding: "30px", fontFamily: "sans-serif", textAlign: "center" }}>
-      <h1>Classificador de Documents - Bisbat</h1>
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center p-6">
 
-      <input type="file" accept="image/*,application/pdf" onChange={(e) => setFile(e.target.files[0])} />
-      <button onClick={handleUpload} disabled={loading} style={{ marginLeft: "10px", padding: "10px 20px" }}>
-        {loading ? "Processant..." : "Pujar i classificar"}
-      </button>
+      {/* Header */}
+      <header className="w-full max-w-3xl mb-8">
+        <h1 className="text-4xl font-bold text-gray-800 text-center">
+          Classificador de Documents
+        </h1>
+        <p className="text-gray-600 text-center mt-2">
+          Carrega documents i deixa que el sistema els organitzi.
+        </p>
+      </header>
 
-      {result && (
-        <div style={{ marginTop: "30px", textAlign: "left", maxWidth: "800px", margin: "auto" }}>
-          <h2>Resultat</h2>
-          <p><strong>Llibre:</strong> {result.llibre}</p>
-          <p><strong>Pàgines:</strong> {result.pagines}</p>
-          <p><strong>Any:</strong> {result.classificacio?.any}</p>
-          <p><strong>Tipus:</strong> {result.classificacio?.tipus}</p>
-          <p><strong>Parròquia:</strong> {result.classificacio?.parroquia}</p>
+      {/* Card */}
+      <div className="bg-white w-full max-w-xl rounded-2xl shadow-lg p-6 transition hover:shadow-xl">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">
+          Puja un document
+        </h2>
 
-          <h3>Text extret (primers 2000 caràcters):</h3>
-          <pre style={{ background: "#f4f4f4", padding: "10px", borderRadius: "5px", maxHeight: "300px", overflowY: "auto" }}>
-            {result.text}
-          </pre>
-        </div>
-      )}
+        <label className="cursor-pointer flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-10 hover:bg-gray-50 transition">
+          <span className="text-gray-500">Arrossega aquí un fitxer o</span>
+          <span className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition">
+            Selecciona un arxiu
+          </span>
+          <input type="file" className="hidden" />
+        </label>
 
-      <button
-        onClick={async () => {
-          if (window.confirm("Segur que vols esborrar TOT l'historial?")) {
-            await axios.delete("https://bisbat-backend.onrender.com//clear");
-            fetchDocuments();
-          }
-        }}
-        style={{ marginTop: "20px", padding: "12px 24px", background: "#e74c3c", color: "white", border: "none", borderRadius: "8px", cursor: "pointer" }}
-      >
-        Netejar historial
-      </button>
-
-      <hr style={{ margin: "40px 0" }} />
-
-      <h2>Historial de llibres</h2>
-      <div style={{ marginBottom: "20px" }}>
-        <input
-          type="text"
-          placeholder="Cerca per nom o text..."
-          onChange={(e) => setSearch(e.target.value.toLowerCase())}
-          style={{ padding: "8px", width: "250px", borderRadius: "5px", border: "1px solid #ccc", marginRight: "10px" }}
-        />
-        <select onChange={(e) => setFilterType(e.target.value)} style={{ padding: "8px", borderRadius: "5px", border: "1px solid #ccc" }}>
-          <option value="">Tots els tipus</option>
-          <option value="Partida de baptisme">Baptisme</option>
-          <option value="Matrimoni">Matrimoni</option>
-          <option value="Defunció">Defunció</option>
-          <option value="Factura">Factura</option>
-          <option value="Carta">Carta</option>
-          <option value="Altres">Altres</option>
-        </select>
+        <button className="mt-6 w-full bg-green-600 text-white py-3 rounded-xl font-medium hover:bg-green-700 transition">
+          Classificar document
+        </button>
       </div>
 
-      {filteredDocuments.length === 0 ? (
-        <p>No hi ha llibres que coincideixin.</p>
-      ) : (
-        <table style={{ margin: "auto", borderCollapse: "collapse", width: "95%" }}>
-          <thead>
-            <tr style={{ background: "#2c3e50", color: "white" }}>
-              <th style={{ padding: "12px" }}>Llibre</th>
-              <th style={{ padding: "12px" }}>Any</th>
-              <th style={{ padding: "12px" }}>Tipus</th>
-              <th style={{ padding: "12px" }}>Pàgines</th>
-              <th style={{ padding: "12px" }}>Parròquia</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredDocuments.map((doc, i) => (
-              <tr key={i} style={{ background: i % 2 === 0 ? "#f8f9fa" : "white" }}>
-                <td style={{ padding: "10px" }}>{doc.nom_llibre}</td>
-                <td style={{ padding: "10px" }}>{doc.classificacio.any}</td>
-                <td style={{ padding: "10px" }}>{doc.classificacio.tipus}</td>
-                <td style={{ padding: "10px", textAlign: "center" }}>{doc.pagines}</td>
-                <td style={{ padding: "10px" }}>{doc.classificacio.parroquia}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      {/* Footer */}
+      <footer className="mt-10 text-gray-500 text-sm">
+        © 2025 Bisbat — Classificador de Documents
+      </footer>
     </div>
   );
 }
-
-export default App;
