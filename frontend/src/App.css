@@ -4,6 +4,35 @@ body {
   margin: 0;
   font-family: Arial, Helvetica, sans-serif;
 }
+.drag-active {
+  background: #eef4ff;
+  border-color: #4a7fff;
+}
+
+.file-name {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.result-card {
+  margin-top: 30px;
+  background: white;
+  padding: 25px;
+  max-width: 650px;
+  width: 100%;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.result-card pre {
+  background: #f3f3f3;
+  padding: 10px;
+  border-radius: 8px;
+  max-height: 250px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
 
 .app-container {
   min-height: 100vh;
