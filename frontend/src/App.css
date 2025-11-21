@@ -1,177 +1,171 @@
-/* ----------- GENERAL ----------- */
-body,
-.app-container {
+/* ----- GENERAL ----- */
+
+body {
   margin: 0;
-  font-family: "Inter", sans-serif;
-  background: #f5f5f5;
-  color: #222;
-  transition: background 0.3s, color 0.3s;
-  display: flex;
+  font-family: Arial, sans-serif;
 }
 
-/* Mode fosc */
+.app-container {
+  display: flex;
+  height: 100vh;
+  background: #f3f3f3;
+  color: #222;
+}
+
 .app-container.dark {
-  background: #1e1e1e;
+  background: #1b1b1b;
   color: #eee;
 }
 
-.app-container.dark .card,
-.app-container.dark .result-card {
-  background: #2a2a2a;
-  color: #ddd;
-}
+/* ----- SIDEBAR ----- */
 
-.app-container.dark .upload-zone {
-  border-color: #777;
+.sidebar {
+  width: 240px;
+  background: #fff;
+  border-right: 1px solid #ddd;
+  padding: 20px;
 }
 
 .app-container.dark .sidebar {
-  background: #262626;
+  background: #2b2b2b;
   border-right: 1px solid #444;
-}
-
-.app-container.dark .history-list li {
-  background: #333;
-}
-
-/* ----------- SIDEBAR ----------- */
-.sidebar {
-  width: 260px;
-  height: 100vh;
-  background: #ffffff;
-  padding: 20px;
-  border-right: 1px solid #ddd;
-  overflow-y: auto;
-  position: fixed;
-  transition: background 0.3s;
 }
 
 .sidebar h2 {
   margin-top: 0;
 }
 
-.empty-history {
-  opacity: 0.6;
-  margin-top: 10px;
-}
-
-.history-list {
+.history {
   list-style: none;
   padding: 0;
-  margin-top: 20px;
 }
 
-.history-list li {
-  background: #f1f1f1;
-  padding: 10px;
+.history li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #efefef;
+  padding: 8px;
+  border-radius: 6px;
   margin-bottom: 8px;
-  border-radius: 8px;
   cursor: pointer;
-  transition: transform 0.1s, background 0.2s;
 }
 
-.history-list li:hover {
-  background: #e0e0e0;
-  transform: scale(1.02);
+.app-container.dark .history li {
+  background: #3b3b3b;
 }
 
-.clear-btn {
-  width: 100%;
-  margin-top: 20px;
-  background: #d9534f;
-  color: white;
-  padding: 10px;
-  border-radius: 8px;
+.history li span:hover {
+  text-decoration: underline;
+}
+
+.delete {
+  background: transparent;
   border: none;
   cursor: pointer;
+  font-size: 16px;
 }
 
-/* ----------- MAIN CONTENT ----------- */
+/* ----- CONTENT ----- */
+
 .content {
-  margin-left: 260px;
-  padding: 30px;
-  width: calc(100% - 260px);
+  flex: 1;
+  padding: 40px;
+  overflow-y: auto;
 }
 
-/* Header */
 .header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 20px;
 }
 
-.theme-switch {
-  padding: 8px 15px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
+.subtitle {
+  margin-top: -10px;
+  margin-bottom: 20px;
+  opacity: 0.7;
 }
+
+/* ----- CARD ----- */
 
 .card {
-  margin-top: 25px;
   background: white;
   padding: 25px;
+  border-radius: 14px;
   max-width: 650px;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-  animation: fadeUp 0.4s ease;
+  margin: auto;
 }
+
+.app-container.dark .card {
+  background: #2b2b2b;
+}
+
+/* Upload zone */
 
 .upload-zone {
-  margin-top: 10px;
-  padding: 30px;
-  border: 2px dashed #999;
-  border-radius: 10px;
+  margin-top: 15px;
+  border: 2px dashed #aaa;
+  padding: 25px;
   text-align: center;
-  transition: background 0.3s, border-color 0.3s;
+  border-radius: 10px;
 }
 
-.drag-active {
-  background: #eef4ff;
-  border-color: #4a7fff;
+.upload-zone.drag {
+  background: #e5f0ff;
+  border-color: #5a8fff;
 }
 
-.upload-button input {
+.file-btn input {
   display: none;
 }
 
-.upload-button {
-  background: #4a7fff;
+.file-btn {
+  background: #4a7cff;
   color: white;
-  padding: 8px 14px;
+  padding: 7px 12px;
   border-radius: 6px;
-  margin-left: 5px;
   cursor: pointer;
-}
-
-.file-name {
+  display: inline-block;
   margin-top: 10px;
 }
 
-.action-button {
+.filename {
+  margin-top: 10px;
+  font-style: italic;
+}
+
+.green-btn {
   margin-top: 20px;
-  background: #2d8f2d;
-  color: white;
-  padding: 12px 20px;
-  border-radius: 10px;
+  padding: 12px;
+  width: 100%;
+  background: #2fa33c;
   border: none;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
-.result-card {
-  margin-top: 30px;
+/* ----- RESULT ----- */
+
+.result-box {
   background: white;
-  padding: 25px;
-  border-radius: 16px;
+  padding: 20px;
+  border-radius: 14px;
+  margin: 30px auto;
   max-width: 650px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
 }
 
-/* ----------- ANIMACIONS ----------- */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(15px); }
-  to { opacity: 1; transform: translateY(0); }
+.app-container.dark .result-box {
+  background: #2b2b2b;
 }
 
-.fade-in {
-  animation: fadeUp 0.4s ease;
+pre {
+  background: #eee;
+  padding: 10px;
+  border-radius: 6px;
+  white-space: pre-wrap;
+}
+
+.app-container.dark pre {
+  background: #3a3a3a;
 }
