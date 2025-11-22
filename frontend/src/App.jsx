@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./App.css";
-import Historial from "./components/Historial";
+import Historial from "./components/Historial.jsx";
 
 
 export default function App() {
