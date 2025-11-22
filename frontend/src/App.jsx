@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./App.css";
+import Historial from "./components/Historial";
+
 
 export default function App() {
   const [file, setFile] = useState(null);
@@ -97,6 +99,17 @@ export default function App() {
           ))}
         </ul>
       </aside>
+
+      <Historial
+          documents={documents}
+          onDelete={async (fileName) => {
+            await axios.delete("https://bisbat-backend.onrender.com/delete-one", {
+              data: { fitxer: fileName }
+            });
+            fetchDocuments();
+          }}
+        />
+
 
       {/* CONTINGUT PRINCIPAL */}
       <main className="content">

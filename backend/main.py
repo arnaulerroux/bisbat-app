@@ -143,3 +143,11 @@ def clear_history():
     if os.path.exists("documents.json"):
         os.remove("documents.json")
     return {"message": "Historial netejat!"}
+
+@app.delete("/delete-one")
+def delete_one(item: dict):
+    fitxer = item["fitxer"]
+    global db
+    db = [d for d in db if d["fitxer"] != fitxer]
+    guardar_db(db)
+    return {"deleted": fitxer}
