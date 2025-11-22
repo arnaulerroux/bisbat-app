@@ -11,6 +11,25 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [dark, setDark] = useState(false);
   const [history, setHistory] = useState([]);
+  const [documents, setDocuments] = useState([]);
+
+// carregar documents del backend
+const fetchDocuments = async () => {
+  try {
+    const res = await axios.get("https://bisbat-backend.onrender.com/documents");
+    setDocuments(res.data.documents);
+  } catch (err) {
+    console.error("Error carregant documents:", err);
+  }
+};
+
+useEffect(() => {
+  const saved = localStorage.getItem("history");
+  if (saved) setHistory(JSON.parse(saved));
+
+  fetchDocuments();
+}, []);
+
 
   useEffect(() => {
     const saved = localStorage.getItem("history");
